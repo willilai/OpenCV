@@ -46,7 +46,7 @@ def applyMask(c, image):
     cv2.fillConvexPoly(mask, c, (255, 255, 255))
     # cv2.imshow("Mask", mask)
     maskWhale = cv2.bitwise_and(image, image, mask = mask)
-    cv2.imshow("Masked Whale", maskWhale)
+    #cv2.imshow("Masked Whale", maskWhale)
 
     return mask
 
@@ -65,69 +65,53 @@ def plot_histogram(image, title, mask = None):
         plt.plot(hist, color = color)
         plt.xlim([0, 256])
 
-    plt.show()
+    #plt.show()
 
     return hists
 
-def blue():
-    blue = cv2.imread("images/blue1.png")
-    # cv2.imshow("Blue Whale", blue)
-    edged = imageManipulation(blue)
+def getHistogram(name):
+    whale = cv2.imread(name)
+    edged = imageManipulation(whale)
     erodedFrame = morphManip(edged)
-    c = contours(erodedFrame, blue)
-    mask = applyMask(c, blue)
+    c = contours(erodedFrame, whale)
+    mask = applyMask(c, whale)
 
-    hists = plot_histogram(blue, "Histogram for Masked Image", mask = mask)
-
-    return hists
-
-def fin():
-    fin = cv2.imread("images/fin1.png")
-    # cv2.imshow("Fin Whale", fin)
-    edged = imageManipulation(fin)
-    erodedFrame = morphManip(edged)
-    c = contours(erodedFrame, fin)
-    mask = applyMask(c, fin)
-
-    hists = plot_histogram(fin, "Histogram for Masked Image", mask = mask)
-
-    return hists
-
-def humpback():
-    humpback = cv2.imread("images/humpback1.png")
-    # cv2.imshow("Humpback Whale", humpback)
-    edged = imageManipulation(humpback)
-    erodedFrame = morphManip(edged)
-    c = contours(erodedFrame, humpback)
-    mask = applyMask(c, humpback)
-
-    hists = plot_histogram(humpback, "Histogram for Masked Image", mask = mask)
-
-    return hists
-
-def beluga():
-    beluga = cv2.imread("images/beluga1.png")
-    # cv2.imshow("Beluga Whale", beluga)
-    edged = imageManipulation(beluga)
-    erodedFrame = morphManip(edged)
-    c = contours(erodedFrame, beluga)
-    mask = applyMask(c, beluga)
-
-    hists = plot_histogram(beluga, "Histogram for Masked Image", mask = mask)
+    hists = plot_histogram(whale, "Histogram for Masked Image", mask = mask)
 
     return hists
 
 def histofOImage():
-    blueHists = blue()
-    finHists = fin()
-    humpbackHists = humpback()
-    belugaHists = beluga()
+    blueHists = getHistogram("images/blue1.png")
+    finHists = getHistogram("images/fin1.png")
+    humpbackHists = getHistogram("images/humpback1.png")
+    belugaHists = getHistogram("images/beluga1.png")
     allHists = [blueHists, finHists, humpbackHists, belugaHists]
 
     return allHists
 
+def comparingHistograms(allHists, curHists):
+    blueMatch = False
+    redMatch = False
+    greenMatch = False
+
+    for whaleHists in allHists:
+        print("\n")
+        for i in range(3):
+            color = ["Blue", "Green", "Red"]
+            colorWhaleHist = whaleHists[i]
+            colorcurHist = curHists[i]
+
+            value = cv2.compareHist(colorWhaleHist, colorcurHist, cv2.HISTCMP_CORREL)
+            print(color[i] + ": " + str(value))
+
+
 def histofNImage(allHists):
-    pass
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-i", "--image", required = True, help = "Path to the image")
+    args = vars(ap.parse_args())
+
+    hists = getHistogram(args["image"])
+    comparingHistograms(allHists, hists)
 
 def main():
     allHists = histofOImage()
