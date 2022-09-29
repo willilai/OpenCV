@@ -6,7 +6,7 @@ import cv2
 
 def imageManipulation(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (21, 21), 0)
+    blurred = cv2.GaussianBlur(gray, (7, 7), 0)
     sobelX = cv2.Sobel(blurred, cv2.CV_64F, 1, 0)
     sobelY = cv2.Sobel(blurred, cv2.CV_64F, 0, 1)
 
@@ -14,9 +14,9 @@ def imageManipulation(image):
     sobelY = np.uint8(np.absolute(sobelY))
 
     sobelCombined = cv2.bitwise_or(sobelX, sobelY)
-
+    cv2.imshow("sobelCombined", sobelCombined)
     edged = cv2.Canny(sobelCombined, 10, 70)
-    # cv2.imshow("Edges", edged)
+    cv2.imshow("Edges", edged)
 
     return edged
 
@@ -27,7 +27,7 @@ def morphManip(edged):
     #eliplical erode to get rid of some of the noise
     openFrame = cv2.dilate(edged, kernel2, iterations = 1)
     erodedFrame = cv2.erode(openFrame, kernel1, iterations = 1)
-    # cv2.imshow("morhp ops", erodedFrame)
+    cv2.imshow("morhp ops", erodedFrame)
 
     return erodedFrame
 
@@ -37,7 +37,7 @@ def contours(erodedFrame, image):
     whale = image.copy()
     c = max(cnts, key=cv2.contourArea)
     cv2.drawContours(whale, c, -1, (0, 255, 0), 2)
-    # cv2.imshow("Whale", whale)
+    cv2.imshow("Whale", whale)
 
     return c
 
@@ -46,7 +46,8 @@ def applyMask(c, image):
     cv2.fillConvexPoly(mask, c, (255, 255, 255))
     # cv2.imshow("Mask", mask)
     maskWhale = cv2.bitwise_and(image, image, mask = mask)
-    #cv2.imshow("Masked Whale", maskWhale)
+    cv2.imshow("Masked Whale", maskWhale)
+    cv2.waitKey(0)
 
     return mask
 
@@ -90,12 +91,13 @@ def histofOImage():
     return allHists
 
 def comparingHistograms(allHists, curHists):
-    blueMatch = False
-    redMatch = False
-    greenMatch = False
-
-    for whaleHists in allHists:
-        print("\n")
+    corrValues = []
+    whaleSpecies = ["Blue", "Fin", "Humpback", "Beluga"]
+    #for whaleHists in allHists:
+    for i in range(len(allHists)):
+        whaleHists = allHists[i]
+        print("\n%s Whale" % whaleSpecies[i])
+        whaleCorrValues = []
         for i in range(3):
             color = ["Blue", "Green", "Red"]
             colorWhaleHist = whaleHists[i]
@@ -103,6 +105,18 @@ def comparingHistograms(allHists, curHists):
 
             value = cv2.compareHist(colorWhaleHist, colorcurHist, cv2.HISTCMP_CORREL)
             print(color[i] + ": " + str(value))
+            whaleCorrValues.append(value)
+        corrValues.append(whaleCorrValues)
+
+
+    maxCorrValueWhale = [0, ""]
+    for i in range(4):
+        meanCorrValues = mean(corrValues[i])
+        if meanCorrValues > maxCorrValueWhale[0]:
+            maxCorrValueWhale[0] = meanCorrValues
+            maxCorrValueWhale[1] = whaleSpecies[i]
+
+    return maxCorrValueWhale[1]
 
 
 def histofNImage(allHists):
@@ -111,7 +125,9 @@ def histofNImage(allHists):
     args = vars(ap.parse_args())
 
     hists = getHistogram(args["image"])
-    comparingHistograms(allHists, hists)
+    whaleSpecies = comparingHistograms(allHists, hists)
+
+    print("\nIt is a %s whale. " % whaleSpecies)
 
 def main():
     allHists = histofOImage()
